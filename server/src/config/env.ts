@@ -3,6 +3,10 @@ import { z } from 'zod';
 // Validate environment variables once, at startup. If anything is missing or
 // malformed the process exits immediately with a clear message, instead of
 // failing later in some random request.
+// `FOO=` in a .env file gives an empty string, not undefined. Treat it as "not set".
+const optional = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((v) => (v === '' ? undefined : v), schema.optional());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(0).max(65535).default(4000),
@@ -17,14 +21,23 @@ const envSchema = z.object({
   COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
   // 'console' logs emails (with their links) instead of sending them: local dev only.
   EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
-  RESEND_API_KEY: z.string().optional(),
+  RESEND_API_KEY: optional(z.string()),
   EMAIL_FROM: z.string().default('Auth Service <onboarding@resend.dev>'),
+  // Google OAuth. Optional: leave all three empty to run without "Sign in with Google".
+  GOOGLE_CLIENT_ID: optional(z.string()),
+  GOOGLE_CLIENT_SECRET: optional(z.string()),
+  // Must EXACTLY match an "Authorized redirect URI" in Google Cloud Console.
+  GOOGLE_REDIRECT_URI: optional(z.url()),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 })
   // Rules that involve more than one variable.
   .refine((e) => e.EMAIL_PROVIDER !== 'resend' || !!e.RESEND_API_KEY, {
     message: 'RESEND_API_KEY is required when EMAIL_PROVIDER=resend',
     path: ['RESEND_API_KEY'],
+  })
+  .refine((e) => [e.GOOGLE_CLIENT_ID, e.GOOGLE_CLIENT_SECRET, e.GOOGLE_REDIRECT_URI].filter(Boolean).length % 3 === 0, {
+    message: 'Set all of GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, or none of them',
+    path: ['GOOGLE_CLIENT_ID'],
   })
   .refine((e) => !(e.NODE_ENV === 'production' && e.EMAIL_PROVIDER === 'console'), {
     // The console mailer writes reset links into the logs: anyone with log access could take over accounts.

@@ -8,9 +8,13 @@ const userSchema = new Schema(
     // unique creates a unique INDEX: the database itself rejects duplicates,
     // which is the only reliable guard against two simultaneous signups.
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    // select: false => never returned by queries unless explicitly asked for with .select('+passwordHash').
+    // Absent for Google-only users. select: false => never returned by queries unless explicitly asked for with .select('+passwordHash').
     passwordHash: { type: String, select: false },
     name: { type: String, required: true, trim: true, maxlength: 100 },
+    // Google's stable user id ("sub"). We match on this, not on email: the email on a
+    // Google account can change, the sub never does. sparse => the unique index ignores
+    // users without one (password-only users), so many of them can coexist.
+    googleId: { type: String, unique: true, sparse: true },
     role: { type: String, enum: ROLES, default: 'user' },
     emailVerified: { type: Boolean, default: false },
   },

@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { googleRouter } from './modules/auth/google.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 // Build the app WITHOUT calling listen(), so tests can import it and send
@@ -24,6 +25,7 @@ export function createApp() {
   app.use(pinoHttp({ logger }));
 
   app.use('/health', healthRouter);
+  app.use('/auth/google', googleRouter);
   app.use('/auth', authRouter);
 
   app.use(notFound);

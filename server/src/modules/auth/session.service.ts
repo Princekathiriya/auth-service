@@ -1,3 +1,4 @@
+import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { RefreshTokenModel } from '../../models/RefreshToken.js';
 import { UserModel } from '../../models/User.js';
@@ -10,6 +11,8 @@ export interface ClientMeta {
   userAgent?: string;
   ip?: string;
 }
+
+export const clientMeta = (req: Request): ClientMeta => ({ userAgent: req.get('user-agent'), ip: req.ip });
 
 // If a just-rotated token shows up again within this window, it's almost certainly
 // two tabs (or React StrictMode) refreshing at the same moment, not an attacker.

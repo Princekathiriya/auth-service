@@ -14,6 +14,9 @@ export default defineConfig({
       JWT_ACCESS_SECRET: 'test-secret-that-is-at-least-32-characters-long',
       JWT_ACCESS_TTL: '15m',
       EMAIL_PROVIDER: 'console',
+      GOOGLE_CLIENT_ID: 'test-client-id.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: 'test-client-secret',
+      GOOGLE_REDIRECT_URI: 'http://localhost:4000/auth/google/callback',
     },
   },
 });

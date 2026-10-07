@@ -10,8 +10,6 @@ import { AppError } from '../../utils/AppError.js';
 
 export const authRouter = Router();
 
-const meta = (req: Request) => ({ userAgent: req.get('user-agent'), ip: req.ip });
-
 // The refresh token goes ONLY into the httpOnly cookie, never into the JSON body,
 // so frontend JavaScript (and any XSS) never sees it. The access token goes in the
 // body; the frontend keeps it in memory (not localStorage) and sends it as a Bearer header.
@@ -27,19 +25,19 @@ const readRefreshCookie = (req: Request): string | undefined => {
 
 // .parse() throws a ZodError on bad input; the error handler turns it into a 400.
 authRouter.post('/register', checkOrigin, async (req, res) => {
-  sendAuth(res, 201, await authService.register(registerSchema.parse(req.body), meta(req)));
+  sendAuth(res, 201, await authService.register(registerSchema.parse(req.body), sessions.clientMeta(req)));
 });
 
 authRouter.post('/login', checkOrigin, async (req, res) => {
-  sendAuth(res, 200, await authService.login(loginSchema.parse(req.body), meta(req)));
+  sendAuth(res, 200, await authService.login(loginSchema.parse(req.body), sessions.clientMeta(req)));
 });
 
 authRouter.post('/refresh', checkOrigin, async (req, res) => {
   const raw = readRefreshCookie(req);
   if (!raw) throw new AppError(401, 'Missing refresh token', 'INVALID_REFRESH_TOKEN');
   try {
-    const { user, refreshToken } = await sessions.rotateRefreshToken(raw, meta(req));
-    sendAuth(res, 200, await authService.issueTokens(user, meta(req), refreshToken));
+    const { user, refreshToken } = await sessions.rotateRefreshToken(raw, sessions.clientMeta(req));
+    sendAuth(res, 200, await authService.issueTokens(user, sessions.clientMeta(req), refreshToken));
   } catch (err) {
     clearRefreshCookie(res); // a dead cookie is useless; remove it so the client stops retrying
     throw err;

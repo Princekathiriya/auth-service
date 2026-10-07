@@ -17,3 +17,25 @@ export function setRefreshCookie(res: Response, token: string, expiresAt: Date) 
 export function clearRefreshCookie(res: Response) {
   res.clearCookie(REFRESH_COOKIE, baseOptions); // options must match or the browser keeps the cookie
 }
+
+export const OAUTH_COOKIE = 'oauth_google';
+
+// Holds state, PKCE verifier and nonce between "redirect to Google" and "Google redirects back".
+const oauthOptions: CookieOptions = {
+  httpOnly: true,
+  secure: isProd,
+  // MUST be 'lax', not 'strict': the callback is a navigation coming FROM accounts.google.com,
+  // i.e. cross-site. A Strict cookie would not be sent, and every login would fail.
+  sameSite: 'lax',
+  path: '/auth/google',
+  maxAge: 10 * 60 * 1000, // the user has 10 minutes to finish on Google's page
+};
+
+export function setOAuthCookie(res: Response, value: string) {
+  res.cookie(OAUTH_COOKIE, value, oauthOptions);
+}
+
+export function clearOAuthCookie(res: Response) {
+  const { maxAge: _maxAge, ...options } = oauthOptions;
+  res.clearCookie(OAUTH_COOKIE, options);
+}
