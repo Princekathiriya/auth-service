@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "test:watch": "vitest",
-    "make-admin": "tsx --env-file-if-exists=.env src/scripts/makeAdmin.ts"
+    "make-admin": "tsx --env-file-if-exists=.env src/scripts/makeAdmin.ts",
+    "dev:memory": "tsx watch --env-file-if-exists=.env src/scripts/devMemory.ts"
   },
   "keywords": [],
   "type": "module",

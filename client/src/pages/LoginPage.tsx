@@ -1,0 +1,45 @@
+import { useState, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { useAuth } from '../auth/useAuth';
+import { ErrorBanner, Field, describeError } from '../components/Form';
+
+export function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState<ReturnType<typeof describeError> | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    setPending(true);
+    setError(null);
+    try {
+      await login(String(form.get('email')), String(form.get('password')));
+      // Only follow internal paths ("/x"), never "//evil.com": an open redirect would let a
+      // phishing link bounce users through our login to an attacker's site.
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(from?.startsWith('/') && !from.startsWith('//') ? from : '/', { replace: true });
+    } catch (err) {
+      setError(describeError(err));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <main className="card">
+      <h1>Log in</h1>
+      <ErrorBanner message={error?.message ?? null} />
+      <form onSubmit={onSubmit} noValidate>
+        <Field label="Email" name="email" type="email" autoComplete="email" required error={error?.fields.email} />
+        <Field label="Password" name="password" type="password" autoComplete="current-password" required error={error?.fields.password} />
+        <button type="submit" disabled={pending}>{pending ? 'Logging in…' : 'Log in'}</button>
+      </form>
+      <p className="muted">
+        No account? <Link to="/register">Create one</Link>
+      </p>
+    </main>
+  );
+}
