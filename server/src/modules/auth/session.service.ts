@@ -1,9 +1,10 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { RefreshTokenModel } from '../../models/RefreshToken.js';
 import { UserModel } from '../../models/User.js';
 import { AppError } from '../../utils/AppError.js';
 import { env } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
+import { generateToken, hashToken } from '../../utils/crypto.js';
 
 export interface ClientMeta {
   userAgent?: string;
@@ -14,16 +15,12 @@ export interface ClientMeta {
 // two tabs (or React StrictMode) refreshing at the same moment, not an attacker.
 export const REUSE_GRACE_MS = 10_000;
 
-// SHA-256 is fine here (unlike for passwords): the token is 256 bits of randomness,
-// so there's nothing to brute-force. Passwords need slow hashes because humans pick weak ones.
-const hashToken = (raw: string) => createHash('sha256').update(raw).digest('hex');
-
 const invalid = () => new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
 
 export async function createRefreshToken(userId: string, meta: ClientMeta, family: string = randomUUID()) {
   // Opaque random string, not a JWT: we must look it up in the DB anyway
   // (to revoke it), so a self-contained signed token would add nothing.
-  const raw = randomBytes(32).toString('base64url');
+  const raw = generateToken();
   const expiresAt = new Date(Date.now() + env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
   await RefreshTokenModel.create({
     userId,

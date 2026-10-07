@@ -15,8 +15,22 @@ const envSchema = z.object({
   // 'strict' when the frontend and API share a site (e.g. app.example.com + api.example.com).
   // 'none' only if they are on different sites (e.g. *.vercel.app + *.onrender.com); requires HTTPS.
   COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
+  // 'console' logs emails (with their links) instead of sending them: local dev only.
+  EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('Auth Service <onboarding@resend.dev>'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-});
+})
+  // Rules that involve more than one variable.
+  .refine((e) => e.EMAIL_PROVIDER !== 'resend' || !!e.RESEND_API_KEY, {
+    message: 'RESEND_API_KEY is required when EMAIL_PROVIDER=resend',
+    path: ['RESEND_API_KEY'],
+  })
+  .refine((e) => !(e.NODE_ENV === 'production' && e.EMAIL_PROVIDER === 'console'), {
+    // The console mailer writes reset links into the logs: anyone with log access could take over accounts.
+    message: 'EMAIL_PROVIDER=console is not allowed in production',
+    path: ['EMAIL_PROVIDER'],
+  });
 
 export type Env = z.infer<typeof envSchema>;
 

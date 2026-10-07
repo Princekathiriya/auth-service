@@ -4,6 +4,8 @@ import { AppError } from '../../utils/AppError.js';
 import { signAccessToken } from '../../utils/tokens.js';
 import { createRefreshToken, type ClientMeta } from './session.service.js';
 import type { LoginInput, RegisterInput } from './auth.schemas.js';
+import { sendVerificationEmail } from './account.service.js';
+import { logger } from '../../utils/logger.js';
 
 // Hash of a random string, computed once. Used when the email doesn't exist so
 // login takes the same time either way (see login()).
@@ -19,9 +21,9 @@ export async function issueTokens(user: UserDoc, meta: ClientMeta, refreshToken?
 export async function register(input: RegisterInput, meta: ClientMeta) {
   // argon2id is the current OWASP recommendation; salt is generated and stored inside the hash string.
   const passwordHash = await argon2.hash(input.password);
+  let user: UserDoc;
   try {
-    const user = await UserModel.create({ email: input.email, name: input.name, passwordHash });
-    return issueTokens(user, meta);
+    user = await UserModel.create({ email: input.email, name: input.name, passwordHash });
   } catch (err) {
     // E11000 = unique index violation. Checking "does the email exist?" first would
     // still race with a concurrent signup; letting the DB decide is race-free.
@@ -30,6 +32,10 @@ export async function register(input: RegisterInput, meta: ClientMeta) {
     }
     throw err;
   }
+  // The account exists at this point. If the email step fails, don't fail the signup:
+  // the user can ask for a new link with /auth/resend-verification.
+  await sendVerificationEmail(user).catch((err: unknown) => logger.error({ err }, 'Could not create verification email'));
+  return issueTokens(user, meta);
 }
 
 export async function login(input: LoginInput, meta: ClientMeta) {

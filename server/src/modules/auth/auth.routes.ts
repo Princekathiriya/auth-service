@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
-import { loginSchema, registerSchema } from './auth.schemas.js';
+import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema, verifyEmailSchema } from './auth.schemas.js';
+import * as account from './account.service.js';
 import * as authService from './auth.service.js';
 import * as sessions from './session.service.js';
 import { requireAuth } from '../../middleware/requireAuth.js';
@@ -56,6 +57,29 @@ authRouter.post('/logout', checkOrigin, async (req, res) => {
 authRouter.post('/logout-all', checkOrigin, requireAuth, async (req, res) => {
   await sessions.revokeAllForUser(req.user!.id);
   clearRefreshCookie(res);
+  res.status(204).end();
+});
+
+authRouter.post('/verify-email', checkOrigin, async (req, res) => {
+  const { token } = verifyEmailSchema.parse(req.body);
+  res.json({ user: await account.verifyEmail(token) });
+});
+
+authRouter.post('/resend-verification', checkOrigin, requireAuth, async (req, res) => {
+  await account.resendVerification(req.user!.id);
+  res.status(204).end();
+});
+
+// Always the same answer, sent immediately. The real work happens in the background.
+authRouter.post('/forgot-password', checkOrigin, async (req, res) => {
+  const { email } = forgotPasswordSchema.parse(req.body);
+  account.requestPasswordResetInBackground(email);
+  res.status(202).json({ message: 'If an account exists for that email, a reset link has been sent.' });
+});
+
+authRouter.post('/reset-password', checkOrigin, async (req, res) => {
+  await account.resetPassword(resetPasswordSchema.parse(req.body));
+  clearRefreshCookie(res); // all sessions were revoked; this browser must log in again too
   res.status(204).end();
 });
 

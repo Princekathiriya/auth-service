@@ -13,6 +13,7 @@ export default defineConfig({
       MONGODB_URI: 'mongodb://placeholder-replaced-by-setup',
       JWT_ACCESS_SECRET: 'test-secret-that-is-at-least-32-characters-long',
       JWT_ACCESS_TTL: '15m',
+      EMAIL_PROVIDER: 'console',
     },
   },
 });
