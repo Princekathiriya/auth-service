@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError, z } from 'zod';
+import mongoose from 'mongoose';
 import { AppError } from '../utils/AppError.js';
 import { isProd } from '../config/env.js';
 
@@ -18,6 +19,12 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
 
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: { code: err.code, message: err.message } });
+    return;
+  }
+
+  // Safety net: a malformed id that slipped past validation is the client's fault, not a 500.
+  if (err instanceof mongoose.Error.CastError) {
+    res.status(400).json({ error: { code: 'INVALID_ID', message: `Invalid ${err.path}` } });
     return;
   }
 
