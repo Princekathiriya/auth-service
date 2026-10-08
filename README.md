@@ -6,7 +6,7 @@ A production-style authentication service: email/password and Google login, refr
 rotation with theft detection, email verification, password reset, roles, and rate limiting.
 Express + TypeScript + MongoDB API, with a small React client to show the flows end to end.
 
-**Live demo:** [https://REPLACE-ME.vercel.app](https://prins-auth-service.vercel.app/)
+**Live demo:** [https://prins-auth-service.vercel.app](https://prins-auth-service.vercel.app/)
 _(The API runs on Render's free tier and sleeps when idle, so the first request can take ~50 seconds.)_
 
 ---
