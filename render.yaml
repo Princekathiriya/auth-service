@@ -1,0 +1,41 @@
+# Render Blueprint: the API service as code. Render reads this when you create a "Blueprint".
+# Values marked `sync: false` are secrets: Render asks for them in its dashboard. They are never in git.
+services:
+  - type: web
+    name: auth-service-api
+    runtime: docker
+    plan: free
+    region: frankfurt # put this in the same region as your Atlas cluster: fewer milliseconds per query
+    dockerContext: ./server
+    dockerfilePath: ./server/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true # deploy on every push to main (CI runs on the same push)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true # Render creates a long random secret; nobody ever needs to see it
+      - key: CLIENT_ORIGIN
+        sync: false # https://<your-app>.vercel.app
+      # The browser reaches the API through Vercel at /api/*, so cookies are scoped to /api/auth.
+      - key: COOKIE_PATH_PREFIX
+        value: /api
+      - key: COOKIE_SAMESITE
+        value: strict
+      # Vercel's proxy + Render's own load balancer. Verify after deploying (see README).
+      - key: TRUST_PROXY_HOPS
+        value: '2'
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: Auth Service <onboarding@resend.dev>
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false # https://<your-app>.vercel.app/api/auth/google/callback

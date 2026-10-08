@@ -19,6 +19,9 @@ const envSchema = z.object({
   // 'strict' when the frontend and API share a site (e.g. app.example.com + api.example.com).
   // 'none' only if they are on different sites (e.g. *.vercel.app + *.onrender.com); requires HTTPS.
   COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
+  // Set when a proxy serves the API under a sub-path (Vercel: /api/* -> API /*). The browser sees
+  // /api/auth/..., so cookies must be scoped to /api/auth or the browser never sends them back.
+  COOKIE_PATH_PREFIX: z.string().regex(/^(\/[a-z0-9-]+)*$/, 'Must look like /api (or be empty)').default(''),
   // 'console' logs emails (with their links) instead of sending them: local dev only.
   EMAIL_PROVIDER: z.enum(['console', 'resend']).default('console'),
   RESEND_API_KEY: optional(z.string()),

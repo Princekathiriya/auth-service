@@ -38,6 +38,9 @@ export function createApp({ rateLimits = env.NODE_ENV !== 'test' }: AppOptions =
       logger,
       // The Google callback URL contains the one-time ?code= and ?state=. Keep them out of logs.
       serializers: { req: serializeRequest },
+      // req.ip AFTER applying trust proxy: the IP rate limiting actually uses. After deploying,
+      // check it shows YOUR IP, not a proxy's. If it shows a proxy IP, TRUST_PROXY_HOPS is wrong.
+      customProps: (req) => ({ clientIp: (req as express.Request).ip }),
     }),
   );
 

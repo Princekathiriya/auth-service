@@ -7,7 +7,7 @@ const baseOptions: CookieOptions = {
   httpOnly: true, // JavaScript can't read it, so an XSS bug can't steal it
   secure: isProd || env.COOKIE_SAMESITE === 'none', // HTTPS only (browsers require this for SameSite=None)
   sameSite: env.COOKIE_SAMESITE, // browser won't attach it to requests started by other sites (CSRF defence)
-  path: '/auth', // only sent to /auth/*, not to every API call
+  path: `${env.COOKIE_PATH_PREFIX}/auth`, // only sent to /auth/*, not to every API call
 };
 
 export function setRefreshCookie(res: Response, token: string, expiresAt: Date) {
@@ -27,7 +27,7 @@ const oauthOptions: CookieOptions = {
   // MUST be 'lax', not 'strict': the callback is a navigation coming FROM accounts.google.com,
   // i.e. cross-site. A Strict cookie would not be sent, and every login would fail.
   sameSite: 'lax',
-  path: '/auth/google',
+  path: `${env.COOKIE_PATH_PREFIX}/auth/google`,
   maxAge: 10 * 60 * 1000, // the user has 10 minutes to finish on Google's page
 };
 
