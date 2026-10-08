@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../auth/useAuth';
-import { ErrorBanner, Field, describeError } from '../components/Form';
+import { ErrorBanner, Field, describeError, fieldError } from '../components/Form';
+import { GOOGLE_LOGIN_URL } from '../lib/config';
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -15,7 +16,7 @@ export function RegisterPage() {
     const password = String(form.get('password'));
     // Client-side checks are for fast feedback only. The server validates everything again.
     if (password.length < 8) {
-      setError({ message: 'Please fix the highlighted fields.', fields: { password: 'Password must be at least 8 characters' } });
+      setError(fieldError('password', 'Password must be at least 8 characters'));
       return;
     }
     setPending(true);
@@ -48,6 +49,8 @@ export function RegisterPage() {
         />
         <button type="submit" disabled={pending}>{pending ? 'Creating account…' : 'Create account'}</button>
       </form>
+      <div className="divider"><span>or</span></div>
+      <a className="button secondary full" href={GOOGLE_LOGIN_URL}>Continue with Google</a>
       <p className="muted">
         Already have an account? <Link to="/login">Log in</Link>
       </p>

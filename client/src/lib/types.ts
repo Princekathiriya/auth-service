@@ -14,3 +14,11 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
 }
+
+export interface UserList {
+  users: User[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}

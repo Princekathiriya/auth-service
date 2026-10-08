@@ -1,5 +1,5 @@
 import { API_URL } from './config';
-import type { AuthResponse, User } from './types';
+import type { AuthResponse, Role, User, UserList } from './types';
 
 /** Mirrors the server's error shape: { error: { code, message, details? } } */
 export class ApiError extends Error {
@@ -152,4 +152,34 @@ export const authApi = {
   },
 
   me: () => api<{ user: User }>('/auth/me').then((r) => r.user),
+
+  verifyEmail: (token: string) =>
+    api<{ user: User }>('/auth/verify-email', { method: 'POST', body: { token }, auth: false }).then((r) => r.user),
+
+  resendVerification: () => api<void>('/auth/resend-verification', { method: 'POST' }),
+
+  forgotPassword: (email: string) =>
+    api<{ message: string }>('/auth/forgot-password', { method: 'POST', body: { email }, auth: false }),
+
+  resetPassword: (token: string, password: string) =>
+    api<void>('/auth/reset-password', { method: 'POST', body: { token, password }, auth: false }),
+};
+
+export interface ListUsersParams {
+  page?: number;
+  search?: string;
+  role?: Role | '';
+}
+
+export const adminApi = {
+  listUsers({ page = 1, search = '', role = '' }: ListUsersParams) {
+    // URLSearchParams escapes values: never build query strings by string concatenation.
+    const params = new URLSearchParams({ page: String(page), limit: '10' });
+    if (search.trim()) params.set('search', search.trim());
+    if (role) params.set('role', role);
+    return api<UserList>(`/admin/users?${params}`);
+  },
+  changeRole: (id: string, role: Role) =>
+    api<{ user: User }>(`/admin/users/${encodeURIComponent(id)}/role`, { method: 'PATCH', body: { role } }).then((r) => r.user),
+  deleteUser: (id: string) => api<void>(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };

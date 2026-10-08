@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { authApi, refreshSession, setSessionExpiredHandler } from '../lib/api';
+import { authApi, clearSession, refreshSession, setSessionExpiredHandler } from '../lib/api';
 import type { User } from '../lib/types';
 
 export type AuthState =
@@ -14,6 +14,8 @@ export interface AuthContextValue {
   logout(): Promise<void>;
   logoutAll(): Promise<void>;
   setUser(user: User): void;
+  /** The server already ended the session (e.g. after a password reset): just forget it locally. */
+  forgetSession(): void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -38,6 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       setUser,
+      forgetSession: () => {
+        clearSession();
+        setState({ status: 'anonymous' });
+      },
       login: async (email, password) => setUser(await authApi.login(email, password)),
       register: async (name, email, password) => setUser(await authApi.register(name, email, password)),
       logout: async () => {
