@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { adminApi } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import { ErrorBanner, describeError } from '../components/Form';
+import { ErrorBanner } from '../components/Form';
+import { describeError } from '../lib/errors';
 import type { Role, UserList } from '../lib/types';
 
 export function AdminPage() {
@@ -12,25 +13,34 @@ export function AdminPage() {
   const [data, setData] = useState<UserList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      setData(await adminApi.listUsers(query));
-      setError(null);
-    } catch (err) {
-      setError(describeError(err).message);
-    }
-  }, [query]);
+  // Bumped after a change (role/delete) to re-fetch the current page.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    // Race: search "a", then quickly "ab". If the "a" response arrives LAST, it would
+    // overwrite the "ab" results. The cleanup marks the old request as stale, so only the
+    // response for the CURRENT query is ever shown.
+    let stale = false;
+    adminApi
+      .listUsers(query)
+      .then((result) => {
+        if (stale) return;
+        setData(result);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!stale) setError(describeError(err).message);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [query, reloadKey]);
 
   async function run(id: string, action: () => Promise<unknown>) {
     setBusyId(id);
     try {
       await action();
-      await load();
+      setReloadKey((k) => k + 1);
     } catch (err) {
       setError(describeError(err).message); // e.g. LAST_ADMIN, DEMOTE_FIRST: the server is the source of truth
     } finally {

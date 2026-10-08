@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { authApi } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import { ErrorBanner, Field, describeError, fieldError } from '../components/Form';
+import { ErrorBanner, Field } from '../components/Form';
+import { describeError, fieldError } from '../lib/errors';
 
 export function ResetPasswordPage() {
   const [params] = useSearchParams();

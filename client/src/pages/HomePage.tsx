@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { authApi } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import { ErrorBanner, describeError } from '../components/Form';
+import { ErrorBanner } from '../components/Form';
+import { describeError } from '../lib/errors';
 
 export function HomePage() {
   const { state, logout, logoutAll, setUser } = useAuth();

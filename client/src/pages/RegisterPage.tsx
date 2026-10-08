@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../auth/useAuth';
-import { ErrorBanner, Field, describeError, fieldError } from '../components/Form';
+import { ErrorBanner, Field } from '../components/Form';
+import { describeError, fieldError } from '../lib/errors';
 import { GOOGLE_LOGIN_URL } from '../lib/config';
 
 export function RegisterPage() {

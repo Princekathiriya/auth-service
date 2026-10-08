@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '../auth/useAuth';
-import { ErrorBanner, Field, describeError } from '../components/Form';
+import { ErrorBanner, Field } from '../components/Form';
+import { describeError } from '../lib/errors';
 import { GOOGLE_LOGIN_URL } from '../lib/config';
 
 // The API redirects here with ?error=CODE when Google login fails. Map codes to friendly text

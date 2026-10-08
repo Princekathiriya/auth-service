@@ -1,0 +1,78 @@
+# Runs on every push and pull request. A red ❌ on GitHub means: don't merge / don't deploy.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Least privilege: this workflow only needs to read the code.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run that's still going for the old commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server (typecheck, lint, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc # same Node version as local dev
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      # `npm ci`, not `npm install`: installs EXACTLY what's in package-lock.json,
+      # and fails if package.json and the lockfile disagree.
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      # No database or secrets needed: tests start an in-memory MongoDB and get
+      # fake config from vitest.config.ts.
+      - run: npm test
+      - run: npm run build
+
+  client:
+    name: Client (typecheck, lint, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      # Only production dependencies, and only high/critical issues fail the build:
+      # a low-severity advisory in a test tool shouldn't block shipping.
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: server
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: client

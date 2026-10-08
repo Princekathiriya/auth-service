@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { authApi } from '../lib/api';
 import { useAuth } from '../auth/useAuth';
-import { describeError } from '../components/Form';
+import { describeError } from '../lib/errors';
 import type { User } from '../lib/types';
 
 /*

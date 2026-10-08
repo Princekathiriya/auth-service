@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { authApi } from '../lib/api';
-import { ErrorBanner, Field, describeError } from '../components/Form';
+import { ErrorBanner, Field } from '../components/Form';
+import { describeError } from '../lib/errors';
 
 export function ForgotPasswordPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);

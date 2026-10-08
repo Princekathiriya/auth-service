@@ -189,6 +189,26 @@ describe('admin page', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Cannot remove the last admin');
   });
 
+  it('a slow response for an OLD search never overwrites the newer results', async () => {
+    const slowResults = (ms: number, users: object[]) => new Promise<Response>((r) => setTimeout(() => r(list(users)), ms));
+    mockFetch((url) => {
+      if (url.endsWith('/auth/refresh')) return json(200, { user: admin, accessToken: 'tok' });
+      if (url.includes('search=al')) return slowResults(10, [{ ...other, id: 'al', email: 'alice@example.com' }]); // newer, fast
+      if (url.includes('search=a')) return slowResults(150, [{ ...other, id: 'aa', email: 'aaron@example.com' }]); // older, slow
+      return list([admin]);
+    });
+    renderApp('/admin');
+    const box = await screen.findByLabelText('Search by email');
+    await userEvent.type(box, 'a');
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await userEvent.type(box, 'l');
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(await screen.findByText('alice@example.com')).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 250)); // let the slow, stale response arrive
+    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('aaron@example.com')).not.toBeInTheDocument();
+  });
+
   it('search sends a properly encoded query', async () => {
     const spy = mockFetch((url) => loggedInAs(admin)(url) ?? list([admin]));
     renderApp('/admin');
