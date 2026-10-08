@@ -76,3 +76,12 @@ jobs:
         working-directory: server
       - run: npm audit --omit=dev --audit-level=high
         working-directory: client
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      # Catches a broken Dockerfile (or a file missing from the build) before it reaches deployment.
+      - run: docker compose build

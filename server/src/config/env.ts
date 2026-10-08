@@ -28,6 +28,11 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: optional(z.string()),
   // Must EXACTLY match an "Authorized redirect URI" in Google Cloud Console.
   GOOGLE_REDIRECT_URI: optional(z.url()),
+  // How many reverse proxies sit in front of the API (Render: 1, docker-compose: 0).
+  // Decides which X-Forwarded-For entry is the real client IP. See app.ts.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+  // 'pretty' needs the pino-pretty dev dependency, so it's only the default in development.
+  LOG_FORMAT: z.enum(['json', 'pretty']).optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 })
   // Rules that involve more than one variable.

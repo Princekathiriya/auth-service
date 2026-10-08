@@ -1,0 +1,61 @@
+# One command runs the whole app locally:   docker compose up --build
+# Then open http://localhost:8080
+#
+# This is for LOCAL use. Secrets below are throwaway defaults; real deployments pass real
+# values from the hosting platform's secret settings (never from a committed file).
+
+services:
+  mongo:
+    image: mongo:8
+    volumes:
+      - mongo-data:/data/db # data survives `docker compose down` (use `down -v` to wipe it)
+    # No `ports:` on purpose. The database is reachable only by other containers on this
+    # network, not from your machine or the internet.
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./server
+    ports:
+      - '${API_PORT:-4000}:4000'
+    environment:
+      # "development" here means: cookies without the Secure flag (we're on plain http://localhost)
+      # and emails printed to the log instead of sent. See them with: docker compose logs api
+      NODE_ENV: development
+      LOG_FORMAT: json
+      PORT: 4000
+      # "mongo" is the service name above: Docker's internal DNS resolves it to that container.
+      MONGODB_URI: mongodb://mongo:27017/auth-service
+      CLIENT_ORIGIN: http://localhost:${WEB_PORT:-8080}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-local-docker-only-secret-do-not-use-in-production}
+      # The browser talks to the API directly (no proxy in between), so trust no X-Forwarded-For.
+      TRUST_PROXY_HOPS: 0
+      EMAIL_PROVIDER: console
+      # Optional: export these in your shell to enable "Continue with Google".
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+    depends_on:
+      mongo:
+        condition: service_healthy # wait until Mongo answers, not just until its container started
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./client
+      args:
+        # The BROWSER calls the API, so this must be a URL your browser can reach (localhost),
+        # not the internal name "api".
+        VITE_API_URL: http://localhost:${API_PORT:-4000}
+    ports:
+      - '${WEB_PORT:-8080}:8080'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

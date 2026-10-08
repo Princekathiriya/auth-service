@@ -24,9 +24,10 @@ export function createApp({ rateLimits = env.NODE_ENV !== 'test' }: AppOptions =
   const app = express();
 
   app.disable('x-powered-by'); // don't advertise "Express" to attackers
-  // Exactly ONE proxy (Render / Docker's nginx) sits in front of us. req.ip is then the real client
-  // IP, which rate limiting relies on. Set it to `true` and anyone could fake their IP via X-Forwarded-For.
-  app.set('trust proxy', 1);
+  // Trust exactly as many proxies as really sit in front of us (Render: 1, docker-compose: 0).
+  // req.ip is then the real client IP, which rate limiting relies on. Too many (or `true`) and
+  // anyone could fake their IP by sending their own X-Forwarded-For header.
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
 
   app.use(helmet()); // sensible security headers
   app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true })); // only our frontend, cookies allowed

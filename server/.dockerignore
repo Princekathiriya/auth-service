@@ -1,0 +1,9 @@
+# Everything listed here never reaches the Docker build. Most important: secrets and local installs.
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+*.log
+*.tmp.*
