@@ -7,10 +7,12 @@ import { z } from 'zod';
 const optional = <T extends z.ZodType>(schema: T) =>
   z.preprocess((v) => (v === '' ? undefined : v), schema.optional());
 
-const envSchema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(0).max(65535).default(4000),
-  CLIENT_ORIGIN: z.url(),
+  // Browsers send Origin as scheme://host[:port], with no path and no trailing slash. Normalise, so
+  // "https://app.vercel.app/" in a dashboard still matches, instead of failing every login with 403.
+  CLIENT_ORIGIN: z.url().transform((url) => new URL(url).origin),
   MONGODB_URI: z.string().startsWith('mongodb'),
   // HS256 secret: must be long and random. Generate with: openssl rand -base64 48
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
